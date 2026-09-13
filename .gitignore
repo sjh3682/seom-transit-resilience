@@ -1,0 +1,10 @@
+data/raw/*
+data/interim/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+__pycache__/
+*.pyc
+node_modules/
+data/web/*
+!data/web/.gitkeep
+tests/_audit/

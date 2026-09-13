@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>섬이 되는 길 | 전국 대중교통 회복탄력성 분석</title>
+<style>__CSS__</style>
+</head>
+<body>
+<div class="app" id="app" data-left="open" data-right="open" data-sheet="">
+  <header class="topbar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">路</div>
+      <div><h1>섬이 되는 길</h1><p>한 정류장이 멈추면, 지역은 섬이 된다 · 전국 대중교통 회복탄력성</p></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" id="tourBtn" title="대표 사례 3개로 바로 이동">발표 모드</button>
+      <button class="btn ghost" id="exportBtn" title="현재 지도를 PNG 로 저장">지도 저장</button>
+      <button class="btn" id="methodBtn">분석 방법</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- ============================== 왼쪽: 레이어·검색·필터·경로 -->
+    <aside class="panel left" id="leftPanel" aria-label="분석 설정">
+      <section class="l-section journey" id="journeyFold">
+        <h2>경로 회복력 <small>노선 하나가 끊기면?</small></h2>
+        <div class="j-field"><i class="a">A</i><input id="startInput" placeholder="출발 정류장·역" autocomplete="off"><div class="results" id="startResults"></div></div>
+        <button class="swap" id="swapBtn" title="출발·도착 바꾸기" aria-label="출발 도착 바꾸기">⇅</button>
+        <div class="j-field"><i class="b">B</i><input id="endInput" placeholder="도착 정류장·역" autocomplete="off"><div class="results" id="endResults"></div></div>
+        <button class="btn primary wide" id="journeyBtn">경로 회복력 분석</button>
+        <p class="note">방향을 지키는 시간 기반 탐색(환승 제한 없음). 경로가 쓰는 노선을 하나씩 끊고 다시 찾아 얼마나 늦어지는지 봅니다.</p>
+      </section>
+
+      <section class="l-section">
+        <h2>분석 레이어</h2>
+        <div class="tabs" id="layerTabs" role="tablist">
+          <button data-layer="region" role="tab" aria-selected="true">지역</button>
+          <button data-layer="line" role="tab" aria-selected="false">노선</button>
+          <button data-layer="stop" role="tab" aria-selected="false">정류장</button>
+          <button data-layer="segment" role="tab" aria-selected="false">구간</button>
+        </div>
+        <div class="seg-control" id="regionSub">
+          <button data-sub="sigungu" aria-pressed="true">시군구</button>
+          <button data-sub="grid" aria-pressed="false">5km 격자</button>
+        </div>
+      </section>
+
+      <section class="l-section">
+        <div class="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" placeholder="정류장·노선·시군구 검색  ( / )" autocomplete="off" aria-label="통합 검색">
+          <div class="results" id="searchResults"></div>
+        </div>
+      </section>
+
+      <section class="l-section">
+        <h2>위험 등급 <small>전국 순위 기준</small></h2>
+        <div class="toggles" id="gradeFilters"></div>
+      </section>
+
+      <section class="l-section">
+        <h2>교통수단</h2>
+        <div class="chip-grid" id="modeFilters"></div>
+      </section>
+
+            <details class="l-section fold" id="settingsFold">
+        <summary><h2>표시 설정</h2></summary>
+        <div class="toggles compact">
+          <button class="toggle" id="dimToggle"><span class="check"></span><span class="toggle-text"><b>선택 시 주변 흐리게</b></span></button>
+          <button class="toggle" id="focusToggle"><span class="check"></span><span class="toggle-text"><b>선택한 것만 보기</b><small>무언가를 선택했을 때만 적용</small></span></button>
+          <button class="toggle" id="lodToggle"><span class="check"></span><span class="toggle-text"><b>전국 화면 간단히 보기</b><small>멀리서 볼 땐 주의·취약 이상만, 확대하면 전부</small></span></button>
+          <button class="toggle" id="gapToggle"><span class="check"></span><span class="toggle-text"><b>정류장 없는 격자 표시</b></span></button>
+          <button class="toggle" id="seniorToggle"><span class="check"></span><span class="toggle-text"><b>고령 40%↑ 지역 강조</b><small id="seniorNote">보조 분석</small></span></button>
+        </div>
+      </details>
+
+    </aside>
+
+    <!-- ============================== 지도 -->
+    <section class="map-panel" id="mapPanel" tabindex="0" aria-label="전국 대중교통 취약성 지도. 드래그로 이동, 휠·핀치로 확대, Esc 로 선택 해제">
+      <div class="tile-root"></div>
+      <canvas class="base"></canvas>
+      <canvas class="overlay"></canvas>
+
+      <div class="map-top">
+        <div class="layer-chip" id="layerChip">불러오는 중</div>
+        <div class="map-buttons">
+          <button id="zoomIn" aria-label="확대">＋</button>
+          <button id="zoomOut" aria-label="축소">−</button>
+          <button id="homeBtn" aria-label="전국 보기" title="전국 보기">⌂</button>
+        </div>
+      </div>
+
+      <button class="edge-handle left" id="toggleLeft" aria-expanded="true" title="왼쪽 패널 접기/펴기 ( [ )"><span></span></button>
+      <button class="edge-handle right" id="toggleRight" aria-expanded="true" title="오른쪽 패널 접기/펴기 ( ] )"><span></span></button>
+
+      <div class="legend" id="legend">
+        <button class="legend-head" id="legendToggle">범례</button>
+        <div id="legendBody"></div>
+      </div>
+      <div class="attribution" id="attribution"></div>
+      <div class="tooltip" id="tooltip"></div>
+      <div class="chooser" id="chooser"></div>
+      <div class="toast" id="toast"></div>
+      <div class="tour-card" id="tourCard"></div>
+
+      <div class="loading" id="loading">
+        <div class="loading-card">
+          <b id="loadingTitle">준비 중</b><p id="loadingDesc"></p>
+          <div class="bar"><i></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== 오른쪽: 분석 결과 -->
+    <aside class="panel right" id="rightPanel" aria-label="분석 결과">
+      <div class="r-toolbar">
+        <button class="icon-btn" id="backBtn" hidden title="뒤로">← 뒤로</button>
+        <span class="spacer"></span>
+        <button class="icon-btn" id="closeBtn" hidden title="선택 해제 (Esc)">선택 해제 ✕</button>
+      </div>
+      <div class="detail" id="detail"></div>
+    </aside>
+  </main>
+
+  <nav class="mobile-nav" id="mobileNav" aria-label="모바일 메뉴">
+    <button data-sheet="">지도</button>
+    <button data-sheet="filters">레이어·검색</button>
+    <button data-sheet="analysis">분석 결과</button>
+  </nav>
+</div>
+
+<dialog id="methodDialog" class="method">
+  <div class="method-head"><div><small>METHODOLOGY</small><h2>어떻게 계산했나요?</h2></div><button class="icon-btn" id="methodClose">닫기 ✕</button></div>
+  <h3>1. 교통망 정리</h3>
+  <p>한국교통연구원 KTDB 「대중교통 GTFS(2025년 3월)」 원본을 씁니다. 정류장 215,409개를 <b>같은 이름·100m 이내</b>로 묶어 정류장 128,383개(양방향 묶음)로, 방향·구간 운행·중복으로 갈라진 노선 26,399개를 <b>노선(운행계통)</b> 17,574개로 통합했습니다. 이동시간은 원본의 <b>실제 도착·출발 시각</b>(하루 운행 326,368회)으로 계산합니다.</p>
+  <h3>2. 하나씩 끊어보는 시뮬레이션(전수)</h3>
+  <p>모든 노선·정류장·도로 구간(188,606개)을 하나씩 없애고, 방향을 지키는 시간 기반 최단경로(대기시간 = 배차 간격의 절반, 배차는 같은 노선·같은 방향의 운행을 모두 합쳐 계산)를 다시 계산합니다. 지도 색과 화면의 버튼은 <b>같은 계산 엔진</b>을 써서 결과가 일치합니다(테스트로 확인).</p>
+  <h3>3. 취약도(TVS, 0~100점)</h3>
+  <p>노선 = 이동시간 증가 30% + 갈 수 있는 병원·역 감소 20% + 대체경로 부족 20% + 끊기는 이동 15% + 영향 인구 15%.<br>
+     정류장이 멈추면 버스는 그대로 지나가고 주민은 대체 정류장(400m, 없으면 800m 안)까지 걸어가는 것으로 봅니다. 도로 구간이 끊기면 그 구간을 지나는 모든 운행이 돌아가는 시간을 봅니다.<br>
+     영향 인구는 행정안전부 행정동 인구를 동 안 정류장에 나눠 붙이고, 섬 항로는 그 항로에 기대는 <b>섬 전체 인구</b>로 계산합니다.</p>
+  <h3>4. 등급</h3>
+  <p>전국 순위로 안정(하위 50%)·주의(50~80%)·취약(80~95%)·매우 취약(상위 5%)을 나눕니다. 노선에는 성격을 붙입니다 — <b>끊기면 고립</b>(대체가 없어 이동 자체가 끊김, 예: 섬·농어촌), <b>끊기면 지연</b>(돌아갈 길은 있지만 크게 늦어짐, 예: 도시철도). 지역 점수는 정류장 취약도를 사람 수로 평균 내고 상위 20% 값을 함께 반영합니다.</p>
+  <h3>5. AI 활용</h3>
+  <p>(1) <b>설명 모델</b>: 구조 특징으로 취약도를 학습(5겹 교차검증 R² 노선 0.775, 정류장 0.771)하고 SHAP 으로 "왜 취약한가"를 뽑습니다. (2) <b>취약 유형 군집</b>: 섬·해상 항로형, 농어촌 말단 고립형 등. (3) <b>정책 최적화</b>: 취약 노선 3,515개 × 정책 조합 35가지 = 123,025개 후보를 전부 계산하면 약 71분 걸립니다. 대리모델이 유망한 후보를 추려 25%만 정밀 계산(약 18분)하고, 무작위 노선 351개의 전수 정답과 비교해 <b>최적 효과의 100~100%</b>를 찾는 것을 확인했습니다(같은 비율 무작위 선택 34~93%). 연 100억 원이면 노선 70곳에 정책을 넣어 286,928명의 고립을 막습니다.</p>
+  <h3>6. 사용한 데이터(모두 공공데이터)</h3>
+  <p>KTDB 대중교통 GTFS(2025.3) · 행정안전부 행정동 성별·연령별 주민등록인구(2026.8) · 건강보험심사평가원 병원·약국(2026.6, 치과·한의 제외) · 국가 표준노드링크(ITS 국가교통정보센터, 2026.8) · 행정동 경계(2025.7)를 2026 행정구역으로 재구성 · 국토교통부 브이월드 배경지도 · 비용: 국토교통부 DRT 도입·운영 가이드라인(2025.12), 시내버스 표준운송원가 · 탄소: KTDB 2025 여객 O/D 예비조사(통행률·수단분담률), 시도별 자동차 등록대수(2025), 한국에너지공단 자동차 표시연비(국산 휘발유 승용 CO₂ 평균 166 g/km).</p>
+  <h3>7. 한계</h3>
+  <p>시각표는 평일 하루 기준이며 지연·혼잡은 반영하지 않습니다. 인구는 행정동 인구를 정류장 수로 나눈 근사입니다. CO₂ 감축은 공공자료로 계산하되, 대중교통 분담률은 3개 도시 예비조사 값을 지역 유형별로 적용했습니다. 버스 노선은 확대하면 국가 표준노드링크를 따라 도로 모양으로 그립니다(정류장 쌍의 91%). 도로망에 없는 구간과 철도·해운은 직선입니다. 호수·간척지 등 통계 경계 밖은 색이 없습니다.</p>
+</dialog>
+
+<script id="seomParams" type="application/json">__PARAMS__</script>
+<script id="engineSrc" type="text/plain">__ENGINE__</script>
+<script id="engineWorkerSrc" type="text/plain">__ENGINE_WORKER__</script>
+<script id="seomData" type="application/octet-stream">__DATA__</script>
+<script>__JS__</script>
+</body>
+</html>

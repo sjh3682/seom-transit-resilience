@@ -1,0 +1,11 @@
+{
+  "name": "seom-transit-resilience",
+  "version": "7.0.0",
+  "private": true,
+  "description": "섬이 되는 길 — 전국 대중교통 회복탄력성 분석 (시뮬레이션 엔진은 파이프라인과 웹이 공유)",
+  "scripts": {
+    "test": "node --test tests/engine.test.js",
+    "simulate": "node --max-old-space-size=2600 pipeline/p03_simulate.js"
+  },
+  "engines": { "node": ">=18" }
+}

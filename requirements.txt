@@ -1,0 +1,9 @@
+# Python 3.10+  /  Node.js 18+ (시뮬레이션 엔진)
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.3
+shapely>=2.0
+shap>=0.44        # 없으면 순열 중요도로 자동 대체
+pyproj>=3.6        # 표준노드링크 좌표 변환(10·11단계)
+pyshp>=2.3         # 표준노드링크 SHP 읽기(10단계)

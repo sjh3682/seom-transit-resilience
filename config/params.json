@@ -1,0 +1,148 @@
+{
+  "_comment": "모든 가중치·임계값·속도 가정을 한 곳에서 관리한다. 파이프라인(Python)과 웹(JS)이 같은 파일을 읽는다.",
+
+  "modes": {
+    "0": { "name": "시내·농어촌·마을버스", "short": "버스",     "speed_kmh": 20,  "detour": 1.30, "dwell_min": 0.4, "long_distance": false },
+    "1": { "name": "도시철도·경전철",     "short": "도시철도", "speed_kmh": 33,  "detour": 1.10, "dwell_min": 0.5, "long_distance": false },
+    "2": { "name": "해운",               "short": "해운",     "speed_kmh": 45,  "detour": 1.05, "dwell_min": 5.0, "long_distance": true  },
+    "3": { "name": "시외·고속버스",       "short": "시외",     "speed_kmh": 65,  "detour": 1.25, "dwell_min": 3.0, "long_distance": true  },
+    "4": { "name": "일반철도",           "short": "철도",     "speed_kmh": 75,  "detour": 1.15, "dwell_min": 1.5, "long_distance": true  },
+    "5": { "name": "공항리무진",         "short": "리무진",   "speed_kmh": 45,  "detour": 1.25, "dwell_min": 1.0, "long_distance": true  },
+    "6": { "name": "고속철도",           "short": "고속철도", "speed_kmh": 170, "detour": 1.10, "dwell_min": 2.0, "long_distance": true  },
+    "7": { "name": "항공",               "short": "항공",     "speed_kmh": 450, "detour": 1.00, "dwell_min": 40,  "long_distance": true  }
+  },
+
+  "service": {
+    "hours_per_day": 17,
+    "wait_cap_min": 30,
+    "_note": "배차간격 = 운행시간/방향별 운행횟수, 기대 대기시간 = min(배차간격/2, wait_cap_min)"
+  },
+
+  "walk": {
+    "speed_kmh": 4.5,
+    "detour": 1.25,
+    "transfer_radius_m": 400,
+    "stop_group_radius_m": 100,
+    "stranded_radius_m": 800
+  },
+
+  "line_merge": {
+    "_note": "같은 운행계통(방향·변형·중복 데이터소스)을 하나로 묶는 기준",
+    "same_name_min_containment": 0.5,
+    "any_name_min_jaccard": 0.95
+  },
+
+  "simulation": {
+    "access_minutes": 60,
+    "_access_note": "기획서는 30분이지만 농어촌은 30분 내 도달 거점이 대부분 0이라 비교가 불가능해 60분을 쓴다.",
+    "od_sample_fractions": [0, 0.25, 0.5, 0.75, 1],
+    "time_increase_cap": 1.0,
+    "disconnect_penalty": 1.0,
+    "od_limit_factor": 2.0,
+    "od_limit_extra_min": 10,
+    "prune_access_if_time_increase_below": 0.05,
+    "stop_training_sample": 6000,
+    "walk_penalty_full_min": 12,
+    "random_seed": 42
+  },
+
+  "tvs": {
+    "route_weights": {
+      "time_increase": 0.30,
+      "access_loss": 0.20,
+      "no_alternative": 0.20,
+      "connectivity": 0.15,
+      "affected_population": 0.15
+    },
+    "stop_weights": {
+      "walk_penalty": 0.30,
+      "access_loss": 0.25,
+      "line_loss": 0.15,
+      "transfer_break": 0.15,
+      "affected_population": 0.15
+    },
+    "segment_weights": {
+      "detour": 0.45,
+      "affected_volume": 0.25,
+      "affected_lines_risk": 0.30
+    },
+    "grade_quantiles": [0.5, 0.8, 0.95]
+  },
+
+  "grades": {
+    "names":  ["안정", "주의", "취약", "매우 취약"],
+    "colors": ["#1f9d63", "#d59a0f", "#dc3b3b", "#161b26"],
+    "shapes": ["●", "◆", "▲", "■"],
+    "ranges": ["하위 50%", "50~80%", "80~95%", "상위 5%"]
+  },
+
+  "display": {
+    "senior_highlight_pct": 40,
+    "_note": "'고령 N%↑ 지역 강조' 기준. 시군구 고령 비율 중앙값이 30.6%라 30%면 절반이 강조돼, 40%(256곳 중 83곳)로 둔다."
+  },
+
+  "destinations": {
+    "exclude_kinds": "치과|한의|한방",
+    "_note": "접근 거점에 넣는 의료기관 종류. 고령자의 일상 진료 접근을 보려고 치과·한의원·한방병원은 뺀다(정규식). 약국은 포함."
+  },
+
+  "policy": {
+    "_note": "AI 정책 최적화(p08). 후보 = 취약 이상 노선 × 아래 변형. 비용 단위 = 시내버스 1대·1년 운영(대·년) 환산.",
+    "combo": {
+      "frequency": [1.5, 2],
+      "drt": {"maxKm": [3, 5, 8], "waitMin": [10, 15, 20]},
+      "extension": {"maxKm": [2, 4]},
+      "_note": "노선당 조합 = (증편 없음·1.5배·2배) × (공간 대안 없음·DRT 9가지·연장 2가지) − 아무것도 안 함 = 35가지"
+    },
+    "validation_line_share": 0.05,
+    "shortlist_share": 0.10,
+    "surrogate_train_share": 0.10,
+    "budgets": [10, 25, 50, 100, 200],
+    "budgets_eok": [20, 50, 100, 200, 500],
+    "benefit_time_weight": 0.5,
+    "_benefit_note": "편익 = 고립에서 벗어나는 인구 + 0.5 × (이동시간 증가율 감소 × 영향 인구). 이동시간이 2배가 되는 사람을 고립의 절반으로 본 가정.",
+    "cost": {
+      "bus_vehicle_year_krw": 287796660,
+      "_bus_source": "광주광역시 시내버스 대형 1일 1대당 표준운송원가 788,484원(2024) × 365일 — 경실련 「광주시 버스 준공영제 운영실태 분석」(2026.4)",
+      "drt_vehicle_year_krw": 203808700,
+      "_drt_source": "국토교통부 「수요응답형교통(DRT) 도입·운영 가이드라인」(2025.12) — 경기 이천시 똑버스 11인승 1대당 운송원가 558,380원/일 × 365일",
+      "drt_to_bus_cost_ratio": 0.708,
+      "_note": "예산 단위: 두 금액이 있으면 억 원/년(budgets_eok), 없으면 버스 대·년(budgets). DRT 차량 수 = 끊긴 노선의 하루 운행횟수(시각표) × 모든 고립 정류장을 도는 경로의 주행시간 ÷ 하루 운행시간(계산값)."
+    }
+  },
+
+  "carbon": {
+    "_note": "노선이 끊겨 대중교통 이용자가 승용차로 옮겨갈 때 늘어나는 CO2. 모든 입력을 공공자료로 계산한다(임의 가정값 없음).",
+    "od_survey": {
+      "_source": "KTDB BRIEF 2026.4 「2025년 전국 여객 기종점통행량 예비조사」(서울·대구·청주 10,871명): 통행률, 귀가 통행 비율, 지역별 수단분담률",
+      "trip_rate": 0.788,
+      "return_trip_share": 0.414,
+      "transit_share": {"서울": 0.393, "광역시": 0.181, "시군": 0.142},
+      "_transit_share_note": "버스+지하철·전철·경전철+철도 분담률. 서울 = 서울, 광역시 = 대구, 그 밖의 시·군 = 청주 조사값을 적용",
+      "metro_cities": ["부산", "대구", "인천", "대전", "울산"]
+    },
+    "usage_file": "transit_usage_by_sido.xlsx",
+    "_usage_note": "국토교통부 대중교통현황조사(2024) 시도별 1주간 평균 대중교통 이용횟수 분포 → 시도별 이용 빈도 보정(전국 평균 = 1.0)",
+    "car_registration_file": "car_registration_2025.xlsx",
+    "_car_note": "시도별 1인당 자동차 등록대수(2025) = 대중교통 이용자 중 승용차를 쓸 수 있는 비율. 비어 있는 전남광주는 전국에서 나머지 시도를 빼서 계산",
+    "fuel_label_file": "fuel_economy_labels.xlsx",
+    "_fuel_note": "한국에너지공단 자동차 표시연비 목록에서 국산 제조사 휘발유 승용(내연기관) 모델의 표시 CO2(g/km) 평균. 높은 시나리오는 수입차 포함 전체 평균",
+    "domestic_makers": ["현대", "기아", "제네시스", "르노", "쉐보레", "한국지엠", "케이지모빌리티", "쌍용"],
+    "gasoline_co2_kg_per_tj": 71600,
+    "gasoline_ncv_mj_per_l": 30.1,
+    "_crosscheck_note": "교차 확인용: 국가 고유 배출계수 71,600 kgCO2/TJ × 순발열량 30.1 MJ/L(에너지법 시행규칙 2022) ÷ 표시연비",
+    "days_per_year": 365
+  },
+
+  "basemap": {
+    "vworld_key": "DC07293F-D737-4DD5-BC34-82A00AD5C705",
+    "_vworld_note": "브이월드(국토교통부) WMTS 개발키 — 3개월 유효, 최대 3회 연장. 기본 배경(백지도 white). 발급·연장: vworld.kr 마이포털 > 인증키 관리",
+    "carto_key": "cb1_3gov_1_7b1ea00097dfb0f73a88a7df",
+    "_note": "CARTO 배경지도 키(무료·비상업). 비우면 행정경계 배경으로 시작한다. 발급·관리: https://dashboard.basemaps.carto.com — GitHub Pages 에 올린 뒤에는 대시보드에서 그 주소로 리퍼러 제한을 걸 수 있다."
+  },
+
+  "region": {
+    "grid_cell_deg": 0.05,
+    "_note": "지역 점수 = 격자/시군구 안 정류장 TVS의 인구가중 평균과 80백분위의 평균. 정류장이 없는 육지 격자는 '서비스 공백'으로 표시한다."
+  }
+}
